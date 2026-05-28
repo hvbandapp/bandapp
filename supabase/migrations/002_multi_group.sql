@@ -40,8 +40,9 @@ update public.notification_log set ensemble_id = (select id from public.ensemble
 
 -- ─────────────────────────────────────────
 -- Sections — make per-ensemble
--- Drop global unique constraint, add ensemble-scoped one
+-- members.section FK references sections_name_key, so drop it first
 -- ─────────────────────────────────────────
+alter table public.members drop constraint members_section_fkey;
 alter table public.sections drop constraint sections_name_key;
 alter table public.sections add column ensemble_id uuid references public.ensembles(id) on delete cascade;
 update public.sections set ensemble_id = (select id from public.ensembles limit 1);
