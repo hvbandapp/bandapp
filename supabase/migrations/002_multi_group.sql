@@ -116,7 +116,8 @@ create policy "director write ensemble_members" on public.ensemble_members
 -- ─────────────────────────────────────────
 -- Updated attendance summary view (ensemble-scoped)
 -- ─────────────────────────────────────────
-create or replace view public.member_attendance_summary as
+drop view if exists public.member_attendance_summary;
+create view public.member_attendance_summary as
 select
   em.ensemble_id,
   m.id                                        as member_id,
