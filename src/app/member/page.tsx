@@ -49,6 +49,14 @@ function getStatusDot(status: AttendanceStatus) {
 export default function MemberPage() {
   const member = DEMO_MEMBER
 
+  if (!member) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center text-slate-400 text-sm">
+        No member data available.
+      </div>
+    )
+  }
+
   // Find this member's summary
   const summary = MOCK_SUMMARIES.find(s => s.member_id === member.id) ?? {
     total_events: 12,

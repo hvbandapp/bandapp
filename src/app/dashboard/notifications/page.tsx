@@ -45,7 +45,7 @@ export default function NotificationsPage() {
   // Send form state
   const [toType, setToType] = useState<'all' | 'section' | 'individual'>('all')
   const [toSection, setToSection] = useState('Trumpet')
-  const [toMember, setToMember] = useState(MOCK_MEMBERS[0].id)
+  const [toMember, setToMember] = useState(MOCK_MEMBERS[0]?.id ?? '')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
