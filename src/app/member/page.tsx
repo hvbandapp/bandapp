@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import { AppFooter } from '@/components/layout/AppFooter'
+import { DemoBanner } from '@/components/demo/DemoBanner'
 import { cn, formatDate, getLevelBadgeClasses, getLevelLabel, getThresholdStatusClasses, getThresholdStatusLabel } from '@/lib/utils'
 import {
   MOCK_MEMBERS,
@@ -80,6 +81,7 @@ export default function MemberPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
+      <DemoBanner />
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 px-4 lg:px-8 h-14 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">

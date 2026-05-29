@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { NavigationGuard } from '@/components/layout/NavigationGuard'
 import { GroupProvider } from '@/lib/group-context'
+import { DemoBanner } from '@/components/demo/DemoBanner'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main content */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <DemoBanner />
           {children}
         </main>
       </div>

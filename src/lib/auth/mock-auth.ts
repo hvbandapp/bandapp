@@ -2,7 +2,7 @@
 
 export interface MockSession {
   email: string
-  role: 'admin' | 'dev'
+  role: 'admin' | 'dev' | 'member'
   name: string
 }
 
@@ -23,6 +23,13 @@ export function mockSignIn(email: string, password: string): MockSession | null 
   const expected = MOCK_PASSWORDS[email.toLowerCase()]
   if (session && expected && password === expected) return session
   return null
+}
+
+export function demoSignInAs(role: 'admin' | 'member'): MockSession {
+  if (role === 'admin') {
+    return { email: 'contact@liveviralmedia.com', role: 'admin', name: 'LiveViral Media' }
+  }
+  return { email: 'alex.rivera@email.com', role: 'member', name: 'Alex Rivera' }
 }
 
 // Demo branch always uses mock mode — Supabase is never called.
