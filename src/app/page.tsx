@@ -45,7 +45,7 @@ export default function LoginPage() {
           Ensemble Trackr
         </h1>
         <p className="mt-1 text-slate-400 text-sm text-center">
-          Grand Valley Brass Band · Est. 2005
+          Happy Valley Brass Band · Est. 1986
         </p>
 
         <div className="mt-4 flex items-center gap-3">

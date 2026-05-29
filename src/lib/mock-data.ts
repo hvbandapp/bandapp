@@ -1,7 +1,7 @@
 import type { Member, Event, AttendanceRecord, SentNotification, UserAccount, AttendanceSummary, SectionSummary, LevelPolicy, AttendancePeriod, Ensemble } from '@/types'
 
 export const MOCK_ENSEMBLES: Ensemble[] = [
-  { id: 'g1', name: 'Grand Valley Brass Band', description: 'Phoenix Metro Area · Est. 2005', est_year: 2005, created_at: '2026-01-01' },
+  { id: 'g1', name: 'Happy Valley Brass Band', description: 'Phoenix, AZ · Est. 1986', est_year: 1986, created_at: '2026-01-01' },
   { id: 'g2', name: 'Mesa Wind Symphony', description: 'Concert band — Mesa, AZ', est_year: 2012, created_at: '2026-01-01' },
 ]
 
