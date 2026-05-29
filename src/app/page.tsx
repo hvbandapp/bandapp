@@ -9,8 +9,8 @@ import { AppFooter } from '@/components/layout/AppFooter'
 import { mockSignIn, isSupabaseConfigured } from '@/lib/auth/mock-auth'
 
 export default function LoginPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail]       = useState('contact@liveviralmedia.com')
+  const [password, setPassword] = useState('LiveViral2026!')
   const [showPw, setShowPw]     = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
@@ -123,7 +123,7 @@ export default function LoginPage() {
           Ensemble Trackr
         </h1>
         <p className="mt-1.5 text-slate-400 text-sm text-center">
-          Happy Valley Brass Band · Est. 1986
+          Grand Valley Brass Band · Est. 2005
         </p>
 
         {/* Gold divider */}
@@ -137,6 +137,12 @@ export default function LoginPage() {
       {/* ── Lower section — login card ── */}
       <div className="flex-1 flex flex-col items-center justify-start pt-8 pb-6 px-4">
         <div className="w-full max-w-sm">
+          {/* Demo banner */}
+          <div className="mb-4 flex items-center justify-center gap-2 bg-teal-600/10 border border-teal-500/30 rounded-xl px-4 py-2.5">
+            <span className="text-[10px] font-bold bg-teal-600 text-white px-1.5 py-0.5 rounded uppercase tracking-wide">Demo</span>
+            <p className="text-xs text-teal-200">Credentials are pre-filled — just click Sign In</p>
+          </div>
+
           <div className="bg-white rounded-2xl shadow-2xl shadow-black/40 px-8 py-8">
             <h2 className="text-lg font-semibold text-slate-800 mb-5">Sign in to your account</h2>
 

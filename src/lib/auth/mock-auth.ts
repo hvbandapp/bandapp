@@ -1,5 +1,4 @@
-// Mock authentication for wireframe/demo — used when Supabase is not yet connected.
-// Replace with real Supabase auth once keys are configured.
+// Demo mode — always uses mock auth regardless of env vars.
 
 export interface MockSession {
   email: string
@@ -8,23 +7,15 @@ export interface MockSession {
 }
 
 const MOCK_CREDENTIALS: Record<string, MockSession> = {
-  'bgiurgiu7@gmail.com': {
-    email: 'bgiurgiu7@gmail.com',
+  'contact@liveviralmedia.com': {
+    email: 'contact@liveviralmedia.com',
     role:  'admin',
-    name:  'Brandon Giurgiu',
-    // password: HappyValleyIsNumberOne101
-  },
-  'dan@liveviralmedia.com': {
-    email: 'dan@liveviralmedia.com',
-    role:  'dev',
-    name:  'Dan Weecks',
-    // password: AdmiNpassword2026!
+    name:  'LiveViral Media',
   },
 }
 
 const MOCK_PASSWORDS: Record<string, string> = {
-  'bgiurgiu7@gmail.com':  'HappyValleyIsNumberOne101',
-  'dan@liveviralmedia.com': 'AdmiNpassword2026!',
+  'contact@liveviralmedia.com': 'LiveViral2026!',
 }
 
 export function mockSignIn(email: string, password: string): MockSession | null {
@@ -34,7 +25,7 @@ export function mockSignIn(email: string, password: string): MockSession | null 
   return null
 }
 
+// Demo branch always uses mock mode — Supabase is never called.
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
-  return url !== '' && !url.includes('placeholder')
+  return false
 }

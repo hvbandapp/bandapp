@@ -95,9 +95,9 @@ export function TopNav({ title, subtitle, onMenuClick, badge = 0 }: TopNavProps)
         {/* User menu */}
         <button className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-0.5">
           <div className="w-7 h-7 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold">
-            B
+            LV
           </div>
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-300 hidden sm:block">Brandon</span>
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300 hidden sm:block">LiveViral</span>
           <ChevronDown size={13} className="text-slate-400 dark:text-slate-500 hidden sm:block" />
         </button>
       </div>
