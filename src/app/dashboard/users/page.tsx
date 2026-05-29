@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import {
-  ShieldCheck, User, Server, ToggleLeft, ToggleRight,
-  Trash2, UserPlus, AlertTriangle, Mail, Clock
+  ShieldCheck, User, ToggleLeft, ToggleRight,
+  Trash2, UserPlus, Mail, Clock
 } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { cn, formatDate, formatDateTime } from '@/lib/utils'
@@ -59,8 +59,7 @@ export default function UsersPage() {
     setShowInvite(false)
   }
 
-  const people   = users.filter(u => u.type === 'person')
-  const services = users.filter(u => u.type === 'service_account')
+  const people = users.filter(u => u.type === 'person')
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -187,44 +186,6 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {/* Service accounts */}
-        <div className="bg-white rounded-xl border border-slate-200">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-            <Server size={15} className="text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-800">Service Accounts & Integrations</h2>
-            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{services.length}</span>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {services.map(svc => (
-              <div key={svc.id} className="px-5 py-3.5 flex items-center gap-4">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 text-xs font-bold flex items-center justify-center shrink-0 uppercase">
-                  {(svc.service_name ?? 'SVC').slice(0, 2)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-800">{svc.name}</span>
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-100 text-amber-700 border-amber-200">
-                      Integration
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">{svc.email}</p>
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-green-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  Active
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Info note */}
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-start gap-3">
-          <AlertTriangle size={14} className="text-slate-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-slate-500">
-            This list reflects all active and invited accounts. Developer infrastructure access is managed separately and does not appear here.
-          </p>
-        </div>
 
       </div>
     </div>

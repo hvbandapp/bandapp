@@ -80,9 +80,6 @@ export const MOCK_USERS: UserAccount[] = [
   { id: 'u2', email: 'jessica.p@email.com',  name: 'Jessica Park',    role: 'section_leader', type: 'person', active: true, last_login: '2026-05-25T10:15:00Z', created_at: '2026-01-15' },
   { id: 'u3', email: 'amanda.f@email.com',   name: 'Amanda Foster',   role: 'section_leader', type: 'person', active: true, last_login: '2026-05-24T14:00:00Z', created_at: '2026-01-15' },
   { id: 'u4', email: 'rachel.k@email.com',   name: 'Rachel Kim',      role: 'section_leader', type: 'person', active: true, last_login: '2026-05-22T11:00:00Z', created_at: '2026-01-15' },
-  { id: 'u5', email: 'noreply@supabase.io',  name: 'Supabase Auth',   role: 'service_account', type: 'service_account', service_name: 'Supabase',  active: true, created_at: '2026-01-01' },
-  { id: 'u6', email: 'noreply@resend.com',   name: 'Resend Email',    role: 'service_account', type: 'service_account', service_name: 'Resend',    active: true, created_at: '2026-01-01' },
-  { id: 'u7', email: 'system@vercel.com',    name: 'Vercel Hosting',  role: 'service_account', type: 'service_account', service_name: 'Vercel',    active: true, created_at: '2026-01-01' },
 ]
 
 export const MOCK_SUMMARIES: AttendanceSummary[] = [
