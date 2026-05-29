@@ -14,9 +14,6 @@ export const MOCK_NOTIFICATIONS: SentNotification[] = []
 
 export const MOCK_USERS: UserAccount[] = [
   { id: 'u1', email: 'bgiurgiu7@gmail.com', name: 'Brandon Giurgiu', role: 'admin', type: 'person', active: true, created_at: '2026-01-01' },
-  { id: 'u5', email: 'noreply@supabase.io', name: 'Supabase Auth',  role: 'service_account', type: 'service_account', service_name: 'Supabase', active: true, created_at: '2026-01-01' },
-  { id: 'u6', email: 'noreply@resend.com',  name: 'Resend Email',   role: 'service_account', type: 'service_account', service_name: 'Resend',   active: true, created_at: '2026-01-01' },
-  { id: 'u7', email: 'system@vercel.com',   name: 'Vercel Hosting', role: 'service_account', type: 'service_account', service_name: 'Vercel',   active: true, created_at: '2026-01-01' },
 ]
 
 export const MOCK_SUMMARIES: AttendanceSummary[] = []
