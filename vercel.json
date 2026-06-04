@@ -1,0 +1,9 @@
+{
+  "projectSettings": { "framework": "nextjs" },
+  "crons": [
+    {
+      "path": "/api/keep-alive",
+      "schedule": "0 6 */3 * *"
+    }
+  ]
+}
