@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { AppFooter } from '@/components/layout/AppFooter'
-import { mockSignIn, isSupabaseConfigured } from '@/lib/auth/mock-auth'
+import { mockSignIn, isSupabaseConfigured, getSessionForEmail } from '@/lib/auth/mock-auth'
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
@@ -90,6 +90,8 @@ export default function LoginPage() {
         return
       }
 
+      // Store session so TopNav and other UI can show the real user
+      sessionStorage.setItem('mock_session', JSON.stringify(getSessionForEmail(capturedEmail)))
       router.push('/dashboard')
     } catch {
       setError('An unexpected error occurred. Please try again.')

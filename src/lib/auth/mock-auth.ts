@@ -34,6 +34,15 @@ export function mockSignIn(email: string, password: string): MockSession | null 
   return null
 }
 
+export function getSessionForEmail(email: string): MockSession {
+  const lower = email.toLowerCase()
+  return MOCK_CREDENTIALS[lower] ?? {
+    email: lower,
+    role:  'admin',
+    name:  lower.split('@')[0],
+  }
+}
+
 export function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
   return url !== '' && !url.includes('placeholder')

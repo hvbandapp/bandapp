@@ -52,7 +52,9 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 export default function DashboardPage() {
   const recentEvents   = [...MOCK_EVENTS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
-  const overallPct     = Math.round(MOCK_SUMMARIES.reduce((sum, s) => sum + s.attendance_pct, 0) / MOCK_SUMMARIES.length)
+  const overallPct     = MOCK_SUMMARIES.length > 0
+    ? Math.round(MOCK_SUMMARIES.reduce((sum, s) => sum + s.attendance_pct, 0) / MOCK_SUMMARIES.length)
+    : 0
   const activeMembers  = MOCK_MEMBERS.filter(m => m.active).length
   const alertCount     = alertMembers.length
 
