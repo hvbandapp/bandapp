@@ -8,12 +8,12 @@ import { Bell, Search, ChevronDown, Menu, Sun, Moon, LogOut, Settings } from 'lu
 import { useDirtyState } from '@/lib/dirty-state'
 import { useTheme } from '@/lib/theme'
 import { isSupabaseConfigured } from '@/lib/auth/mock-auth'
+import { useSidebar } from '@/lib/sidebar-context'
 
 interface TopNavProps {
-  title:        string
-  subtitle?:    string
-  onMenuClick?: () => void
-  badge?:       number
+  title:     string
+  subtitle?: string
+  badge?:    number
 }
 
 interface StoredSession {
@@ -22,10 +22,11 @@ interface StoredSession {
   role:  string
 }
 
-export function TopNav({ title, subtitle, onMenuClick, badge = 0 }: TopNavProps) {
+export function TopNav({ title, subtitle, badge = 0 }: TopNavProps) {
   const router                = useRouter()
   const { requestNavigation } = useDirtyState()
   const { theme, toggle }     = useTheme()
+  const { setSidebarOpen }    = useSidebar()
 
   const [session, setSession] = useState<StoredSession | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -75,7 +76,7 @@ export function TopNav({ title, subtitle, onMenuClick, badge = 0 }: TopNavProps)
       {/* Left: hamburger (mobile) + logo + divider + page title */}
       <div className="flex items-center gap-3 min-w-0">
         <button
-          onClick={onMenuClick}
+          onClick={() => setSidebarOpen(true)}
           className="lg:hidden p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
           aria-label="Open menu"
         >
