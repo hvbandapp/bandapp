@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {
   Users, CalendarDays, TrendingUp, AlertTriangle,
-  ChevronRight, Music2, CheckCircle2, Clock, XCircle
+  ChevronRight, Music2, CheckCircle2, Clock, XCircle, Plus, CalendarPlus
 } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { cn, formatDate, getThresholdStatusClasses, getThresholdStatusLabel, getLevelBadgeClasses, getLevelLabel } from '@/lib/utils'
@@ -63,6 +63,24 @@ export default function DashboardPage() {
       <TopNav title="Dashboard" subtitle={MOCK_PERIOD.label} badge={alertCount} />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+
+        {/* Quick Actions */}
+        <div className="flex gap-3">
+          <Link
+            href="/dashboard/members?add=1"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus size={15} />
+            Add Member
+          </Link>
+          <Link
+            href="/dashboard/events"
+            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-sm font-medium rounded-lg transition-colors"
+          >
+            <CalendarPlus size={15} />
+            Add Event
+          </Link>
+        </div>
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

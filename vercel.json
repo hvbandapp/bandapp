@@ -1,5 +1,4 @@
 {
-  "projectSettings": { "framework": "nextjs" },
   "crons": [
     {
       "path": "/api/keep-alive",

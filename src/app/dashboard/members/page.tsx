@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   Search,
   Plus,
@@ -10,6 +11,7 @@ import {
   Pencil,
   ChevronDown,
   Users,
+  Loader2,
 } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { cn, getLevelBadgeClasses, getLevelLabel } from '@/lib/utils'
@@ -47,17 +49,38 @@ const EMPTY_FORM = {
   role: 'member',
 }
 
-export default function MembersPage() {
+function MembersContent() {
+  const params = useSearchParams()
   const [search, setSearch] = useState('')
   const [sectionFilter, setSectionFilter] = useState('All')
   const [levelFilter, setLevelFilter] = useState('All')
   const [roleFilter, setRoleFilter] = useState('All')
-  const [showModal, setShowModal] = useState(false)
+  const [showModal, setShowModal] = useState(params.get('add') === '1')
   const [form, setForm] = useState(EMPTY_FORM)
-  const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS)
+
+  // Load real members from Supabase if connected
+  useEffect(() => {
+    async function load() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const { data } = await createClient()
+          .from('members')
+          .select('*')
+          .eq('active', true)
+          .order('last_name')
+        if (data?.length) setMembers(data as Member[])
+      } catch { /* keep mock data */ }
+    }
+    void load()
+  }, [])
 
   const filtered = useMemo(() => {
-    return MOCK_MEMBERS.filter(m => {
+    return members.filter(m => {
       const name = `${m.first_name} ${m.last_name}`.toLowerCase()
       const matchSearch =
         !search || name.includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase())
@@ -66,20 +89,80 @@ export default function MembersPage() {
       const matchRole = roleFilter === 'All' || m.role === roleFilter
       return matchSearch && matchSection && matchLevel && matchRole
     })
-  }, [search, sectionFilter, levelFilter, roleFilter])
+  }, [members, search, sectionFilter, levelFilter, roleFilter])
 
   function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitted(true)
-    setTimeout(() => {
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+      if (isSupabaseConfigured()) {
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+
+        // Insert member row (auth_user_id nullable — set when they first log in)
+        const { data: newMember, error: insertErr } = await sb
+          .from('members')
+          .insert({
+            first_name: form.first_name,
+            last_name:  form.last_name,
+            email:      form.email,
+            phone:      form.phone || null,
+            section:    form.section,
+            level:      Number(form.level) as MemberLevel,
+            role:       form.role as Role,
+            active:     true,
+          })
+          .select('*')
+          .single()
+
+        if (insertErr) throw new Error(insertErr.message)
+
+        // Also add to ensemble_members for the first ensemble
+        if (newMember) {
+          const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+          const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+          if (eid) {
+            await sb.from('ensemble_members').insert({
+              ensemble_id: eid,
+              member_id:   (newMember as Member).id,
+              section:     form.section,
+              level:       Number(form.level),
+              role:        form.role,
+              active:      true,
+            }).throwOnError()
+          }
+          setMembers(prev => [...prev, newMember as Member])
+        }
+      } else {
+        // Mock mode: add locally
+        const mockNew: Member = {
+          id:             `mock-${Date.now()}`,
+          first_name:     form.first_name,
+          last_name:      form.last_name,
+          email:          form.email,
+          phone:          form.phone || undefined,
+          section:        form.section,
+          level:          Number(form.level) as MemberLevel,
+          role:           form.role as Role,
+          active:         true,
+          backup_enabled: true,
+          created_at:     new Date().toISOString(),
+        }
+        setMembers(prev => [...prev, mockNew])
+      }
       setShowModal(false)
       setForm(EMPTY_FORM)
-      setSubmitted(false)
-    }, 1500)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to add member.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const notifCount = MOCK_USERS.filter(u => u.type === 'person' && u.role !== 'admin').length
@@ -88,7 +171,7 @@ export default function MembersPage() {
     <div className="flex flex-col h-full overflow-hidden">
       <TopNav
         title="Members"
-        subtitle="Happy Valley Brass Band · 18 members"
+        subtitle={`Happy Valley Brass Band · ${members.length} member${members.length !== 1 ? 's' : ''}`}
         badge={notifCount}
       />
 
@@ -416,20 +499,25 @@ export default function MembersPage() {
                 </div>
               </div>
 
+              {submitError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{submitError}</p>
+              )}
+
               <div className="pt-2 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); setSubmitError('') }}
                   className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitted}
-                  className="flex-1 py-2.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors disabled:opacity-70"
+                  disabled={submitting}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors disabled:opacity-70"
                 >
-                  {submitted ? 'Member Added!' : 'Add Member'}
+                  {submitting && <Loader2 size={14} className="animate-spin" />}
+                  {submitting ? 'Adding…' : 'Add Member'}
                 </button>
               </div>
             </form>
@@ -437,5 +525,13 @@ export default function MembersPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense>
+      <MembersContent />
+    </Suspense>
   )
 }

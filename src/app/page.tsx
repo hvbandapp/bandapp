@@ -8,6 +8,16 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { AppFooter } from '@/components/layout/AppFooter'
 import { mockSignIn, isSupabaseConfigured, getSessionForEmail } from '@/lib/auth/mock-auth'
 
+// Notifies the native WebView shell of a successful login so the media sync
+// hook can run. No-ops when running in a regular browser.
+function postWebViewAuth(userId: string, email: string, name: string) {
+  if (typeof window === 'undefined') return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rn = (window as any).ReactNativeWebView
+  if (!rn) return
+  rn.postMessage(JSON.stringify({ type: 'AUTH', user_id: userId, email, name }))
+}
+
 export default function LoginPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -59,6 +69,7 @@ export default function LoginPage() {
 
         // Store minimal session in sessionStorage for demo
         sessionStorage.setItem('mock_session', JSON.stringify(session))
+        postWebViewAuth(session.id ?? '', capturedEmail, session.name ?? '')
         router.push('/dashboard')
         return
       }
@@ -88,6 +99,24 @@ export default function LoginPage() {
         setError(authError.message)
         setLoading(false)
         return
+      }
+
+      // Fetch the members.id so the native shell can identify the member row
+      // (members.id, not auth.users.id — the shell uses it for device + backup_enabled lookups)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: memberRow } = await supabase
+          .from('members')
+          .select('id, first_name, last_name')
+          .eq('auth_user_id', user.id)
+          .single()
+        if (memberRow) {
+          postWebViewAuth(
+            memberRow.id,
+            capturedEmail,
+            `${memberRow.first_name} ${memberRow.last_name}`,
+          )
+        }
       }
 
       // Store session so TopNav and other UI can show the real user

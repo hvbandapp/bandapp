@@ -23,7 +23,42 @@ export interface Member {
   level: MemberLevel
   role: Role
   active: boolean
+  backup_enabled: boolean
   created_at: string
+}
+
+export interface UserDevice {
+  id: string
+  user_id: string
+  device_id: string
+  device_name?: string
+  device_model?: string
+  device_brand?: string
+  os_name?: string
+  os_version?: string
+  ip_address?: string
+  platform?: string
+  last_seen_at: string
+}
+
+export interface BackupSession {
+  id: string
+  user_id: string
+  user_name: string
+  device_id: string
+  platform?: string
+  status: 'running' | 'completed' | 'failed'
+  files_done: number
+  started_at: string
+  completed_at?: string
+}
+
+export interface UserDiagnostic {
+  user_id: string
+  media_permission?: string
+  photo_count?: number
+  video_count?: number
+  last_checked_at?: string
 }
 
 export interface Event {
