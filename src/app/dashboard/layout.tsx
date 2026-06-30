@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { NavigationGuard } from '@/components/layout/NavigationGuard'
 import { GroupProvider } from '@/lib/group-context'
+import { AppVersion } from '@/components/layout/AppVersion'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,7 +34,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Main content */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {children}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {children}
+          </div>
+          <AppVersion className="shrink-0 py-1 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400" />
         </main>
       </div>
     </NavigationGuard>
