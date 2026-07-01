@@ -44,7 +44,7 @@ const EMPTY_FORM = {
   last_name: '',
   email: '',
   phone: '',
-  section: 'Trumpet',
+  section: 'Trumpet 1',
   level: '1',
   role: 'member',
 }
@@ -60,6 +60,7 @@ function MembersContent() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS)
+  const [sections, setSections] = useState<string[]>([...DEFAULT_SECTIONS])
 
   // Load real members from Supabase if connected
   useEffect(() => {
@@ -77,6 +78,28 @@ function MembersContent() {
       } catch { /* keep mock data */ }
     }
     void load()
+  }, [])
+
+  // Load sections (including custom) from Supabase
+  useEffect(() => {
+    async function loadSections() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+        const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+        if (!eid) return
+        const { data } = await sb
+          .from('sections')
+          .select('name')
+          .eq('ensemble_id', eid)
+          .order('sort_order')
+        if (data?.length) setSections((data as { name: string }[]).map(s => s.name))
+      } catch { /* keep defaults */ }
+    }
+    void loadSections()
   }, [])
 
   const filtered = useMemo(() => {
@@ -199,7 +222,7 @@ function MembersContent() {
                 className="appearance-none pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
               >
                 <option value="All">All Sections</option>
-                {DEFAULT_SECTIONS.map(s => (
+                {sections.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -456,7 +479,7 @@ function MembersContent() {
                       onChange={handleFormChange}
                       className="appearance-none w-full px-3 pr-7 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
                     >
-                      {DEFAULT_SECTIONS.map(s => (
+                      {sections.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>

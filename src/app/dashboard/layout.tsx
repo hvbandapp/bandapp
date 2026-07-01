@@ -23,8 +23,8 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar — fixed on desktop, slide-in on mobile */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-30 lg:relative lg:z-auto transition-transform duration-200',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          'sidebar-drawer fixed inset-y-0 left-0 z-30 w-64 lg:relative lg:z-auto lg:w-auto transition-transform duration-200',
+          sidebarOpen && 'sidebar-drawer--open'
         )}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />

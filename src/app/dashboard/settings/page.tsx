@@ -6,13 +6,15 @@ import { TopNav } from '@/components/layout/TopNav'
 import { cn, getLevelBadgeClasses } from '@/lib/utils'
 import { MOCK_LEVEL_POLICIES, MOCK_PERIOD } from '@/lib/mock-data'
 import { useDirtyState } from '@/lib/dirty-state'
-import { DEFAULT_SECTIONS } from '@/types'
+import { DEFAULT_SECTIONS, DEFAULT_EVENT_TYPES } from '@/types'
 import type { LevelPolicy, MemberLevel } from '@/types'
 
 export default function SettingsPage() {
   const [policies, setPolicies] = useState<LevelPolicy[]>(MOCK_LEVEL_POLICIES)
-  const [sections, setSections] = useState<string[]>([...DEFAULT_SECTIONS])
-  const [newSection, setNewSection] = useState('')
+  const [sections, setSections]       = useState<string[]>([...DEFAULT_SECTIONS])
+  const [newSection, setNewSection]   = useState('')
+  const [eventTypes, setEventTypes]   = useState<string[]>([...DEFAULT_EVENT_TYPES])
+  const [newEventType, setNewEventType] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -26,10 +28,10 @@ export default function SettingsPage() {
   // Refs so doSave always reads latest values without re-creating the callback
   const ensembleIdRef    = useRef<string | null>(null)
   const currentPeriodRef = useRef<string | null>(null)
-  const liveState        = useRef({ policies, sections, periodLabel, periodStart, periodEnd })
+  const liveState        = useRef({ policies, sections, eventTypes, periodLabel, periodStart, periodEnd })
   useEffect(() => {
-    liveState.current = { policies, sections, periodLabel, periodStart, periodEnd }
-  }, [policies, sections, periodLabel, periodStart, periodEnd])
+    liveState.current = { policies, sections, eventTypes, periodLabel, periodStart, periodEnd }
+  }, [policies, sections, eventTypes, periodLabel, periodStart, periodEnd])
 
   const { setDirty, clearDirty } = useDirtyState()
 
@@ -54,12 +56,13 @@ export default function SettingsPage() {
       if (raw) {
         const c = JSON.parse(raw) as {
           periodLabel: string; periodStart: string; periodEnd: string
-          sections: string[]; policies: LevelPolicy[]
+          sections: string[]; eventTypes?: string[]; policies: LevelPolicy[]
         }
         setPeriodLabel(c.periodLabel)
         setPeriodStart(c.periodStart)
         setPeriodEnd(c.periodEnd)
         setSections(c.sections)
+        if (c.eventTypes) setEventTypes(c.eventTypes)
         setPolicies(c.policies)
       }
     } catch { /* ignore bad cache */ }
@@ -76,10 +79,11 @@ export default function SettingsPage() {
         ensembleIdRef.current = eid
         if (!eid) return
 
-        const [periodsRes, policiesRes, sectionsRes] = await Promise.all([
+        const [periodsRes, policiesRes, sectionsRes, eventTypesRes] = await Promise.all([
           sb.from('attendance_periods').select('*').eq('ensemble_id', eid).eq('active', true).limit(1),
           sb.from('level_policies').select('*').eq('ensemble_id', eid).order('level'),
           sb.from('sections').select('name').eq('ensemble_id', eid).order('sort_order'),
+          sb.from('event_types').select('name').eq('ensemble_id', eid).order('sort_order'),
         ])
 
         if (periodsRes.data?.[0]) {
@@ -102,6 +106,9 @@ export default function SettingsPage() {
         if (sectionsRes.data?.length) {
           setSections((sectionsRes.data as { name: string }[]).map(s => s.name))
         }
+        if (eventTypesRes.data?.length) {
+          setEventTypes((eventTypesRes.data as { name: string }[]).map(s => s.name))
+        }
       } catch { /* non-fatal — mock/cached data stays */ }
     }
     void load()
@@ -119,7 +126,7 @@ export default function SettingsPage() {
             const { createClient } = await import('@/lib/supabase/client')
             const sb  = createClient()
             const eid = ensembleIdRef.current
-            const { policies: p, sections: s, periodLabel: pl, periodStart: ps, periodEnd: pe } = liveState.current
+            const { policies: p, sections: s, eventTypes: et, periodLabel: pl, periodStart: ps, periodEnd: pe } = liveState.current
 
             if (eid) {
               // Attendance period
@@ -155,6 +162,18 @@ export default function SettingsPage() {
               if (toRemove.length) {
                 await sb.from('sections').delete().eq('ensemble_id', eid).in('name', toRemove)
               }
+
+              // Event types: sync custom event types
+              const { data: dbEventTypes } = await sb.from('event_types').select('name, is_default').eq('ensemble_id', eid)
+              const etMap = new Map((dbEventTypes ?? []).map((r: { name: string; is_default: boolean }) => [r.name, r.is_default]))
+              const etToAdd = et.filter(name => !etMap.has(name) && !DEFAULT_EVENT_TYPES.includes(name as typeof DEFAULT_EVENT_TYPES[number]))
+              const etToRemove = [...etMap.entries()].filter(([name, isDefault]) => !isDefault && !et.includes(name)).map(([n]) => n)
+              if (etToAdd.length) {
+                await sb.from('event_types').insert(etToAdd.map((name, i) => ({ ensemble_id: eid, name, is_default: false, sort_order: 50 + i })))
+              }
+              if (etToRemove.length) {
+                await sb.from('event_types').delete().eq('ensemble_id', eid).in('name', etToRemove)
+              }
             }
           }
         } catch (e) {
@@ -168,6 +187,7 @@ export default function SettingsPage() {
             periodStart: liveState.current.periodStart,
             periodEnd:   liveState.current.periodEnd,
             sections:    liveState.current.sections,
+            eventTypes:  liveState.current.eventTypes,
             policies:    liveState.current.policies,
           }))
         } catch { /* storage full — non-fatal */ }
@@ -239,6 +259,21 @@ export default function SettingsPage() {
   function removeSection(s: string) {
     if (DEFAULT_SECTIONS.includes(s as typeof DEFAULT_SECTIONS[number])) return
     setSections(prev => prev.filter(x => x !== s))
+    markDirty()
+  }
+
+  function addEventType() {
+    const trimmed = newEventType.trim()
+    if (trimmed && !eventTypes.includes(trimmed)) {
+      setEventTypes(prev => [...prev, trimmed])
+      setNewEventType('')
+      markDirty()
+    }
+  }
+
+  function removeEventType(s: string) {
+    if (DEFAULT_EVENT_TYPES.includes(s as typeof DEFAULT_EVENT_TYPES[number])) return
+    setEventTypes(prev => prev.filter(x => x !== s))
     markDirty()
   }
 
@@ -401,6 +436,45 @@ export default function SettingsPage() {
             />
             <button
               onClick={addSection}
+              className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Plus size={14} /> Add
+            </button>
+          </div>
+        </div>
+
+        {/* Event Type Management */}
+        <div id="event-types" className="bg-white rounded-xl border border-slate-200 p-5">
+          <h2 className="text-sm font-semibold text-slate-800 mb-1">Event Type Management</h2>
+          <p className="text-xs text-slate-400 mb-4">Add or remove event types. Default types cannot be removed.</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {eventTypes.map(s => {
+              const isDefault = DEFAULT_EVENT_TYPES.includes(s as typeof DEFAULT_EVENT_TYPES[number])
+              return (
+                <div
+                  key={s}
+                  className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border', isDefault ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-teal-50 border-teal-200 text-teal-700')}
+                >
+                  {s}
+                  {!isDefault && (
+                    <button onClick={() => removeEventType(s)} className="text-teal-500 hover:text-red-500 transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={newEventType}
+              onChange={e => setNewEventType(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addEventType())}
+              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              placeholder="New event type…"
+            />
+            <button
+              onClick={addEventType}
               className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               <Plus size={14} /> Add

@@ -149,12 +149,28 @@ export interface SectionSummary {
 }
 
 export const DEFAULT_SECTIONS = [
-  'Trumpet',
+  'Trumpet 1',
+  'Trumpet 2',
   'Trombone',
   'Euphonium',
   'Tuba',
   'Percussion',
 ] as const
+
+export const DEFAULT_EVENT_TYPES = [
+  'Rehearsal',
+  'Sunday Service',
+  'Funeral',
+  'Concert',
+] as const
+
+/** Maps built-in display name → DB slug for the events.type column */
+export const EVENT_TYPE_SLUG: Record<string, string> = {
+  'Rehearsal':      'rehearsal',
+  'Sunday Service': 'sunday_service',
+  'Funeral':        'funeral',
+  'Concert':        'concert',
+}
 
 export const DEFAULT_LEVEL_POLICIES: LevelPolicy[] = [
   {

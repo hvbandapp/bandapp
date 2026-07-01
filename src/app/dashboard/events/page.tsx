@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { CalendarDays, Plus, ChevronRight, FileText, Loader2 } from 'lucide-react'
+import { CalendarDays, Plus, ChevronRight, FileText, Loader2, Settings2 } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { cn, formatDate } from '@/lib/utils'
 import { MOCK_EVENTS } from '@/lib/mock-data'
+import { DEFAULT_EVENT_TYPES, EVENT_TYPE_SLUG } from '@/types'
 import type { EventType, Event } from '@/types'
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -15,17 +16,18 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   concert:        'bg-amber-100 text-amber-700 border-amber-200',
   custom:         'bg-blue-100 text-blue-700 border-blue-200',
 }
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  rehearsal:      'Rehearsal',
-  sunday_service: 'Sunday Service',
-  funeral:        'Funeral',
-  concert:        'Concert',
-  custom:         'Custom',
+
+/** Returns the display label for any event */
+function eventLabel(event: Event): string {
+  if (event.type === 'custom' && event.custom_type) return event.custom_type
+  const labels: Record<string, string> = {
+    rehearsal: 'Rehearsal', sunday_service: 'Sunday Service',
+    funeral: 'Funeral', concert: 'Concert',
+  }
+  return labels[event.type] ?? event.type
 }
 
-const ALL_TYPES = ['all', 'rehearsal', 'sunday_service', 'funeral', 'concert']
-
-const BLANK_EVENT = { name: '', date: '', type: 'rehearsal' as EventType, notes: '' }
+const BLANK_EVENT = { name: '', date: '', type: 'rehearsal' as EventType, custom_type: '', notes: '' }
 
 export default function EventsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
@@ -33,9 +35,60 @@ export default function EventsPage() {
   const [form, setForm] = useState(BLANK_EVENT)
   const [saving, setSaving] = useState(false)
   const [events, setEvents] = useState<Event[]>(MOCK_EVENTS)
+  const [eventTypes, setEventTypes] = useState<string[]>([...DEFAULT_EVENT_TYPES])
 
-  const filtered = events.filter(e => typeFilter === 'all' || e.type === typeFilter)
-  const sorted   = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
+  // Load event types (built-in + custom) from Supabase
+  useEffect(() => {
+    async function loadEventTypes() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+        const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+        if (!eid) return
+        const { data } = await sb
+          .from('event_types')
+          .select('name')
+          .eq('ensemble_id', eid)
+          .order('sort_order')
+        if (data?.length) setEventTypes((data as { name: string }[]).map(s => s.name))
+      } catch { /* keep defaults */ }
+    }
+    void loadEventTypes()
+  }, [])
+
+  /** Convert a display-name option value into form type/custom_type */
+  function applyEventType(name: string) {
+    const slug = EVENT_TYPE_SLUG[name]
+    if (slug) {
+      setForm(f => ({ ...f, type: slug as EventType, custom_type: '' }))
+    } else {
+      setForm(f => ({ ...f, type: 'custom' as EventType, custom_type: name }))
+    }
+  }
+
+  /** Derive the select's current value from form state */
+  const formTypeValue = form.type === 'custom' && form.custom_type
+    ? form.custom_type
+    : (Object.entries(EVENT_TYPE_SLUG).find(([, v]) => v === form.type)?.[0] ?? form.type)
+
+  /** Derive filter key for a display name */
+  function filterKey(name: string) {
+    return EVENT_TYPE_SLUG[name] ?? `custom:${name}`
+  }
+
+  /** Active filter key for an event */
+  function eventFilterKey(event: Event) {
+    if (event.type === 'custom' && event.custom_type) return `custom:${event.custom_type}`
+    return event.type
+  }
+
+  const filtered = events.filter(e =>
+    typeFilter === 'all' || eventFilterKey(e) === typeFilter
+  )
+  const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date))
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -43,6 +96,7 @@ export default function EventsPage() {
     setTimeout(() => {
       const newEvent: Event = {
         ...form,
+        custom_type: form.custom_type || undefined,
         id: `e${Date.now()}`,
         created_by: 'director',
         created_at: new Date().toISOString(),
@@ -63,28 +117,40 @@ export default function EventsPage() {
         {/* Filter + Create bar */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-1.5 flex-wrap">
-            {ALL_TYPES.map(t => (
+            <button
+              onClick={() => setTypeFilter('all')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                typeFilter === 'all' ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')}
+            >
+              All Types
+            </button>
+            {eventTypes.map(name => (
               <button
-                key={t}
-                onClick={() => setTypeFilter(t)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                  typeFilter === t
-                    ? 'bg-teal-600 text-white'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                )}
+                key={name}
+                onClick={() => setTypeFilter(filterKey(name))}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                  typeFilter === filterKey(name) ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50')}
               >
-                {t === 'all' ? 'All Types' : EVENT_TYPE_LABELS[t]}
+                {name}
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            <Plus size={15} />
-            Create Event
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/dashboard/settings#event-types"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              <Settings2 size={13} />
+              Manage types
+            </Link>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Plus size={15} />
+              Create Event
+            </button>
+          </div>
         </div>
 
         {/* Create event panel */}
@@ -115,15 +181,13 @@ export default function EventsPage() {
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Event Type</label>
                 <select
-                  value={form.type}
-                  onChange={e => setForm(f => ({ ...f, type: e.target.value as EventType }))}
+                  value={formTypeValue}
+                  onChange={e => applyEventType(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  <option value="rehearsal">Rehearsal</option>
-                  <option value="sunday_service">Sunday Service</option>
-                  <option value="funeral">Funeral</option>
-                  <option value="concert">Concert</option>
-                  <option value="custom">Custom</option>
+                  {eventTypes.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -172,8 +236,8 @@ export default function EventsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-800">{event.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className={cn('text-[11px] font-medium px-1.5 py-0.5 rounded border', EVENT_TYPE_COLORS[event.type])}>
-                    {EVENT_TYPE_LABELS[event.type] ?? event.custom_type}
+                  <span className={cn('text-[11px] font-medium px-1.5 py-0.5 rounded border', EVENT_TYPE_COLORS[event.type] ?? EVENT_TYPE_COLORS.custom)}>
+                    {eventLabel(event)}
                   </span>
                   <span className="text-xs text-slate-400">{formatDate(event.date)}</span>
                   {event.notes && (

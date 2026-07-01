@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState, useCallback } from 'react'
+import { use, useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Mail, Phone, Edit3, Save, CheckCircle } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
@@ -25,9 +25,10 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     .filter(a => a.event)
     .sort((a, b) => (b.event?.date ?? '').localeCompare(a.event?.date ?? ''))
 
-  const [editing, setEditing] = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [form,    setForm]    = useState({
+  const [editing, setEditing]   = useState(false)
+  const [saved,   setSaved]     = useState(false)
+  const [sections, setSections] = useState<string[]>([...DEFAULT_SECTIONS])
+  const [form,    setForm]      = useState({
     first_name: member.first_name,
     last_name:  member.last_name,
     email:      member.email,
@@ -36,6 +37,27 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     level:      member.level as MemberLevel,
     role:       member.role,
   })
+
+  useEffect(() => {
+    async function loadSections() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+        const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+        if (!eid) return
+        const { data } = await sb
+          .from('sections')
+          .select('name')
+          .eq('ensemble_id', eid)
+          .order('sort_order')
+        if (data?.length) setSections((data as { name: string }[]).map(s => s.name))
+      } catch { /* keep defaults */ }
+    }
+    void loadSections()
+  }, [])
 
   const { setDirty, clearDirty } = useDirtyState()
 
@@ -135,7 +157,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Section</label>
                   <select value={form.section} onChange={e => setForm(f => ({...f, section: e.target.value}))} className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    {DEFAULT_SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    {sections.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>

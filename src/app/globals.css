@@ -99,6 +99,13 @@ body {
 .status-absent   { background-color: var(--attendance-absent);  color: #fff; }
 .status-excused  { background-color: var(--attendance-excused); color: #fff; }
 
+/* ─── Mobile sidebar drawer ─────────────────────────────── */
+.sidebar-drawer           { transform: translateX(-100%); }
+.sidebar-drawer--open     { transform: translateX(0); }
+@media (min-width: 1024px) {
+  .sidebar-drawer         { transform: none; }
+}
+
 /* ─── Sidebar scrollbar ──────────────────────────────────── */
 .sidebar-scroll::-webkit-scrollbar       { width: 4px; }
 .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
