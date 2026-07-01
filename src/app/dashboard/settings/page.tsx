@@ -41,6 +41,25 @@ export default function SettingsPage() {
   const [eventReminders, setEventReminders] = useState(true)
   const [reminderHours, setReminderHours]   = useState('24')
 
+  function addLevel() {
+    const nextLevel = Math.max(...policies.map(p => p.level), 3) + 1
+    setPolicies(prev => [...prev, {
+      level: nextLevel,
+      label: `Level ${nextLevel}`,
+      description: '',
+      max_absences: null,
+      warning_threshold: null,
+      final_notice_threshold: null,
+    }])
+    markDirty()
+  }
+
+  function removeLevel(level: number) {
+    if (level <= 3) return
+    setPolicies(prev => prev.filter(p => p.level !== level))
+    markDirty()
+  }
+
   function updatePolicy(level: MemberLevel, field: keyof LevelPolicy, value: number | null | string) {
     markDirty()
     setPolicies(prev => prev.map(p => p.level === level ? { ...p, [field]: value } : p))
@@ -138,18 +157,32 @@ export default function SettingsPage() {
                 if (ins) currentPeriodRef.current = (ins as { id: string }).id
               }
 
-              // Level policies
-              await Promise.all(p.map(policy =>
-                sb.from('level_policies')
-                  .update({
-                    description:            policy.description,
-                    max_absences:           policy.max_absences,
-                    warning_threshold:      policy.warning_threshold,
-                    final_notice_threshold: policy.final_notice_threshold,
-                  })
-                  .eq('ensemble_id', eid)
-                  .eq('level', policy.level)
-              ))
+              // Level policies — insert new, update existing, delete removed custom levels
+              const { data: dbPolicies } = await sb.from('level_policies').select('level').eq('ensemble_id', eid)
+              const dbLevelSet = new Set((dbPolicies ?? []).map((r: { level: number }) => r.level))
+              const currentLevelSet = new Set(p.map(pol => pol.level))
+              const toInsertPolicies = p.filter(pol => !dbLevelSet.has(pol.level))
+              const toUpdatePolicies = p.filter(pol => dbLevelSet.has(pol.level))
+              const toDeleteLevels   = [...dbLevelSet].filter(lv => !currentLevelSet.has(lv) && lv > 3)
+              if (toInsertPolicies.length) {
+                await sb.from('level_policies').insert(toInsertPolicies.map(pol => ({
+                  ensemble_id: eid, level: pol.level, label: pol.label,
+                  description: pol.description, max_absences: pol.max_absences,
+                  warning_threshold: pol.warning_threshold, final_notice_threshold: pol.final_notice_threshold,
+                })))
+              }
+              if (toUpdatePolicies.length) {
+                await Promise.all(toUpdatePolicies.map(pol =>
+                  sb.from('level_policies').update({
+                    label: pol.label, description: pol.description,
+                    max_absences: pol.max_absences, warning_threshold: pol.warning_threshold,
+                    final_notice_threshold: pol.final_notice_threshold,
+                  }).eq('ensemble_id', eid).eq('level', pol.level)
+                ))
+              }
+              if (toDeleteLevels.length) {
+                await sb.from('level_policies').delete().eq('ensemble_id', eid).in('level', toDeleteLevels)
+              }
 
               // Sections: sync custom sections
               const { data: dbSections } = await sb.from('sections').select('name, is_default').eq('ensemble_id', eid)
@@ -345,10 +378,26 @@ export default function SettingsPage() {
           <div className="space-y-5">
             {policies.map(policy => (
               <div key={policy.level} className="border border-slate-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={cn('text-xs font-medium px-2 py-0.5 rounded border', getLevelBadgeClasses(policy.level))}>
-                    {policy.label}
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={cn('text-xs font-medium px-2 py-0.5 rounded border shrink-0', getLevelBadgeClasses(policy.level))}>
+                      L{policy.level}
+                    </span>
+                    <input
+                      value={policy.label}
+                      onChange={e => updatePolicy(policy.level, 'label', e.target.value)}
+                      className="px-2 py-1 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500 min-w-0 w-52"
+                      placeholder={`Level ${policy.level} name`}
+                    />
+                  </div>
+                  {policy.level > 3 && (
+                    <button
+                      onClick={() => removeLevel(policy.level)}
+                      className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 transition-colors shrink-0"
+                    >
+                      <Trash2 size={13} /> Remove
+                    </button>
+                  )}
                 </div>
                 <div className="mb-3">
                   <label className="block text-xs font-medium text-slate-600 mb-1">Description</label>
@@ -402,6 +451,12 @@ export default function SettingsPage() {
               </div>
             ))}
           </div>
+          <button
+            onClick={addLevel}
+            className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus size={14} /> Add Level
+          </button>
         </div>
 
         {/* Section Management */}

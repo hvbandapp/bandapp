@@ -16,8 +16,8 @@ import {
 import { TopNav } from '@/components/layout/TopNav'
 import { cn, getLevelBadgeClasses, getLevelLabel } from '@/lib/utils'
 import { MOCK_MEMBERS, MOCK_USERS } from '@/lib/mock-data'
-import { DEFAULT_SECTIONS } from '@/types'
-import type { Member, MemberLevel, Role } from '@/types'
+import { DEFAULT_SECTIONS, DEFAULT_LEVEL_POLICIES } from '@/types'
+import type { Member, MemberLevel, Role, LevelPolicy } from '@/types'
 
 const ROLE_LABELS: Record<Role, string> = {
   director: 'Director',
@@ -32,11 +32,7 @@ const ROLE_BADGE: Record<Role, string> = {
 }
 
 function getLevelShortLabel(level: MemberLevel): string {
-  switch (level) {
-    case 1: return 'L1'
-    case 2: return 'L2'
-    case 3: return 'L3'
-  }
+  return `L${level}`
 }
 
 const EMPTY_FORM = {
@@ -61,6 +57,7 @@ function MembersContent() {
   const [submitError, setSubmitError] = useState('')
   const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS)
   const [sections, setSections] = useState<string[]>([...DEFAULT_SECTIONS])
+  const [policies, setPolicies] = useState<LevelPolicy[]>([...DEFAULT_LEVEL_POLICIES])
 
   // Load real members from Supabase if connected
   useEffect(() => {
@@ -78,6 +75,28 @@ function MembersContent() {
       } catch { /* keep mock data */ }
     }
     void load()
+  }, [])
+
+  // Load level policies from Supabase
+  useEffect(() => {
+    async function loadPolicies() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+        const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+        if (!eid) return
+        const { data } = await sb
+          .from('level_policies')
+          .select('*')
+          .eq('ensemble_id', eid)
+          .order('level')
+        if (data?.length) setPolicies(data as LevelPolicy[])
+      } catch { /* keep defaults */ }
+    }
+    void loadPolicies()
   }, [])
 
   // Load sections (including custom) from Supabase
@@ -237,9 +256,9 @@ function MembersContent() {
                 className="appearance-none pl-3 pr-8 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
               >
                 <option value="All">All Levels</option>
-                <option value="1">L1 — Elite</option>
-                <option value="2">L2 — Standard</option>
-                <option value="3">L3 — Developmental</option>
+                {policies.map(p => (
+                  <option key={p.level} value={String(p.level)}>L{p.level} — {p.label}</option>
+                ))}
               </select>
               <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
@@ -496,9 +515,9 @@ function MembersContent() {
                       onChange={handleFormChange}
                       className="appearance-none w-full px-3 pr-7 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
                     >
-                      <option value="1">L1 — Elite</option>
-                      <option value="2">L2 — Standard</option>
-                      <option value="3">L3 — Developmental</option>
+                      {policies.map(p => (
+                        <option key={p.level} value={String(p.level)}>{p.label}</option>
+                      ))}
                     </select>
                     <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>

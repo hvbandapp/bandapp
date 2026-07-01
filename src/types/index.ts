@@ -8,7 +8,7 @@ export interface Ensemble {
 
 export type Role = 'director' | 'section_leader' | 'member'
 export type AdminRole = 'admin'
-export type MemberLevel = 1 | 2 | 3
+export type MemberLevel = number
 export type AttendanceStatus = 'present' | 'partial' | 'absent' | 'excused'
 export type EventType = 'rehearsal' | 'sunday_service' | 'funeral' | 'concert' | 'custom'
 export type AbsenceType = 'unexcused' | 'excused'

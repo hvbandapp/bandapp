@@ -9,15 +9,14 @@ import {
   cn, formatDate, getLevelBadgeClasses, getLevelLabel,
   getAttendanceDotColor, getThresholdStatusClasses, getThresholdStatusLabel
 } from '@/lib/utils'
-import { MOCK_MEMBERS, MOCK_EVENTS, MOCK_ATTENDANCE, MOCK_SUMMARIES, MOCK_LEVEL_POLICIES } from '@/lib/mock-data'
-import { DEFAULT_SECTIONS, ATTENDANCE_LABELS } from '@/types'
-import type { MemberLevel, AttendanceStatus } from '@/types'
+import { MOCK_MEMBERS, MOCK_EVENTS, MOCK_ATTENDANCE, MOCK_SUMMARIES } from '@/lib/mock-data'
+import { DEFAULT_SECTIONS, DEFAULT_LEVEL_POLICIES, ATTENDANCE_LABELS } from '@/types'
+import type { MemberLevel, AttendanceStatus, LevelPolicy } from '@/types'
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const member  = MOCK_MEMBERS.find(m => m.id === id) ?? MOCK_MEMBERS[0]
   const summary = MOCK_SUMMARIES.find(s => s.member_id === member.id)
-  const policy  = MOCK_LEVEL_POLICIES.find(p => p.level === member.level)
 
   const history = MOCK_ATTENDANCE
     .filter(a => a.member_id === member.id)
@@ -28,6 +27,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [editing, setEditing]   = useState(false)
   const [saved,   setSaved]     = useState(false)
   const [sections, setSections] = useState<string[]>([...DEFAULT_SECTIONS])
+  const [policies, setPolicies] = useState<LevelPolicy[]>([...DEFAULT_LEVEL_POLICIES])
   const [form,    setForm]      = useState({
     first_name: member.first_name,
     last_name:  member.last_name,
@@ -37,6 +37,29 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
     level:      member.level as MemberLevel,
     role:       member.role,
   })
+
+  const policy = policies.find(p => p.level === member.level)
+
+  useEffect(() => {
+    async function loadPolicies() {
+      try {
+        const { isSupabaseConfigured } = await import('@/lib/auth/mock-auth')
+        if (!isSupabaseConfigured()) return
+        const { createClient } = await import('@/lib/supabase/client')
+        const sb = createClient()
+        const { data: ensembles } = await sb.from('ensembles').select('id').limit(1)
+        const eid = (ensembles as { id: string }[] | null)?.[0]?.id
+        if (!eid) return
+        const { data } = await sb
+          .from('level_policies')
+          .select('*')
+          .eq('ensemble_id', eid)
+          .order('level')
+        if (data?.length) setPolicies(data as LevelPolicy[])
+      } catch { /* keep defaults */ }
+    }
+    void loadPolicies()
+  }, [])
 
   useEffect(() => {
     async function loadSections() {
@@ -163,9 +186,9 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">Level</label>
                   <select value={form.level} onChange={e => setForm(f => ({...f, level: Number(e.target.value) as MemberLevel}))} className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                    <option value={1}>Level 1 — Elite</option>
-                    <option value={2}>Level 2 — Standard</option>
-                    <option value={3}>Level 3 — Developmental</option>
+                    {policies.map(p => (
+                      <option key={p.level} value={p.level}>{p.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
